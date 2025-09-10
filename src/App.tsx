@@ -12,33 +12,22 @@ function App() {
   const [isPressedTranslated, setIsPressedTranslated] = useState(false);
   const [translatedText, setTranslatedText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(defaultApiKey);
   const [showSettings, setShowSettings] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
 
-  const openai = useMemo(
-    () =>
-      createOpenAI({
-        apiKey: apiKey,
-      }),
-    [apiKey]
-  );
+  const loadOpenAI = async () => {
+    const result = await chrome.storage.sync.get(["openaiApiKey"]);
+    if (result.openaiApiKey) {
+      const apiKey = result.openaiApiKey;
 
-  useEffect(() => {
-    // Load API key from storage
-    const loadApiKey = async () => {
-      try {
-        const result = await chrome.storage.sync.get(["openaiApiKey"]);
-        if (result.openaiApiKey) {
-          setApiKey(result.openaiApiKey);
-        }
-      } catch (error) {
-        console.error("Error loading API key:", error);
+      if (apiKey) {
+        const openai = createOpenAI({
+          apiKey: apiKey,
+        });
+        return openai;
       }
-    };
-
-    loadApiKey();
-  }, []);
+    }
+  };
 
   useEffect(() => {
     const handleLoad = async () => {
@@ -70,7 +59,6 @@ function App() {
 
     handleLoad();
   }, []);
-  console.log(translatedText);
 
   const translate = async (inputText: string) => {
     try {
@@ -78,7 +66,9 @@ function App() {
       setLoading(true);
       setIsPressedTranslated(true);
 
-      if (!apiKey) {
+      const openai = await loadOpenAI();
+
+      if (!openai) {
         setTranslatedText("Please set your OpenAI API key in the settings.");
         setLoading(false);
         return;
@@ -167,16 +157,7 @@ Input: ${inputText}
         </div>
       )}
 
-      {showSettings && (
-        <Settings
-          apiKey={apiKey}
-          onSave={(newApiKey) => {
-            setApiKey(newApiKey);
-            setShowSettings(false);
-          }}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

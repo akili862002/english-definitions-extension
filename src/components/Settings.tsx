@@ -1,21 +1,27 @@
 import { useState, useEffect } from "react";
 
 interface SettingsProps {
-  apiKey: string;
-  onSave: (apiKey: string) => void;
   onClose: () => void;
 }
 
-export function Settings({ apiKey, onSave, onClose }: SettingsProps) {
-  const [key, setKey] = useState(apiKey || "");
+export function Settings({ onClose }: SettingsProps) {
+  const [key, setKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
+
+  useEffect(() => {
+    const loadKey = async () => {
+      const result = await chrome.storage.sync.get(["openaiApiKey"]);
+      setKey(result.openaiApiKey || "");
+    };
+    loadKey();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await chrome.storage.sync.set({ openaiApiKey: key });
-      onSave(key);
+      onClose();
     } catch (error) {
       console.error("Error saving API key:", error);
     } finally {
