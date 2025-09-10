@@ -1,13 +1,18 @@
 {
   "manifest_version": 3,
-  "version": "1.0.0",
-  "name": "AI Translator",
+  "version": "0.0.1",
+  "name": "English Definition",
+  "description": "Learn English faster with AI: clear word definitions and examples.",
   "action": {
     "default_popup": "index.html"
   },
   "permissions": ["scripting", "activeTab", "storage"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "icons": {
-    "32": "icon32.png"
-  }
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "theme_color": "#ffffff"
 }

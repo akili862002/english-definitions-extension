@@ -100,7 +100,7 @@ Input: ${inputText}
   return (
     <div className="w-full p-4 max-w-md text-sm mx-auto">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Interpretation</h2>
+        <h2 className="text-lg font-semibold">English Definition</h2>
         <button
           onClick={() => setShowSettings(true)}
           className="p-1.5 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
@@ -149,7 +149,7 @@ Input: ${inputText}
                   <ReactMarkdown>{translatedText}</ReactMarkdown>
                 </div>
                 {isStreaming && (
-                  <span className="inline-block ml-1 animate-pulse">▌</span>
+                  <span className="inline-block ml-1 animate-pulse">|</span>
                 )}
               </>
             )}
