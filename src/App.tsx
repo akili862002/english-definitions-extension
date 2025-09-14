@@ -1,11 +1,16 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Home } from "./tabs/home/home";
 import { Settings } from "./tabs/settings/settings";
+import { History, HistoryProvider } from "./tabs/history/history";
 
 const tabs = [
   {
     id: "home",
     label: "Home",
+  },
+  {
+    id: "history",
+    label: "History",
   },
   {
     id: "settings",
@@ -26,12 +31,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
 
   return (
-    <AppContext.Provider value={{ activeTab, setActiveTab }}>
-      <div className="w-full p-4 max-w-md text-sm">
-        {activeTab === "home" && <Home />}
-        {activeTab === "settings" && <Settings />}
-      </div>
-    </AppContext.Provider>
+    <HistoryProvider>
+      <AppContext.Provider value={{ activeTab, setActiveTab }}>
+        <div className="w-full p-4 max-w-md text-sm">
+          {activeTab === "home" && <Home />}
+          {activeTab === "history" && <History />}
+          {activeTab === "settings" && <Settings />}
+        </div>
+      </AppContext.Provider>
+    </HistoryProvider>
   );
 }
 

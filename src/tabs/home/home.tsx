@@ -2,10 +2,19 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { LoadingIcon, MagicIcon, SettingsIcon } from "./home.icons";
+import {
+  LoadingIcon,
+  MagicIcon,
+  SettingsIcon,
+  HistoryIcon,
+} from "./home.icons";
 import { useStorage } from "../../hooks/use-storage";
 import { useAppContext } from "../../App";
-import { STORAGE_OPENAI_API_KEY } from "../../const/keys";
+import {
+  STORAGE_OPENAI_API_KEY,
+  STORAGE_SEARCH_HISTORY,
+} from "../../const/keys";
+import { HistoryItem } from "../history/history";
 
 const defaultApiKey = import.meta.env.VITE_OPENAI_API_KEY || "";
 
@@ -19,6 +28,10 @@ export const Home = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [apiKey] = useStorage<string>(STORAGE_OPENAI_API_KEY, defaultApiKey);
+  const [searchHistory, setSearchHistory] = useStorage<HistoryItem[]>(
+    STORAGE_SEARCH_HISTORY,
+    []
+  );
 
   const loadOpenAI = async () => {
     let key = apiKey;
@@ -38,6 +51,16 @@ export const Home = () => {
 
   useEffect(() => {
     const handleLoad = async () => {
+      // Check if there's a selected query from history
+      const selectedQuery = localStorage.getItem("selected_query");
+      if (selectedQuery) {
+        setText(selectedQuery);
+        translate(selectedQuery);
+        // Clear the selected query after using it
+        localStorage.removeItem("selected_query");
+        return;
+      }
+
       if (!chrome.tabs) return;
 
       try {
@@ -93,6 +116,19 @@ export const Home = () => {
     window.speechSynthesis.speak(utterance);
   };
 
+  const saveToHistory = async (query: string, result: string) => {
+    // Create a new history item
+    const newItem: HistoryItem = {
+      id: Date.now().toString(),
+      query,
+      result,
+      timestamp: Date.now(),
+    };
+
+    // Add to history (most recent first)
+    await setSearchHistory([newItem, ...searchHistory.slice(0, 49)]);
+  };
+
   const translate = async (inputText: string) => {
     try {
       setTranslatedText("");
@@ -121,9 +157,14 @@ Input: ${inputText}
  `,
       });
 
+      let fullText = "";
       for await (const textPart of textStream) {
-        setTranslatedText((prev) => prev + textPart);
+        fullText += textPart;
+        setTranslatedText(fullText);
       }
+
+      // Save to history after translation is complete
+      await saveToHistory(inputText, fullText);
     } catch (error) {
       console.error("Translation error:", error);
       setTranslatedText("Có lỗi xảy ra khi dịch. Vui lòng thử lại sau.");
@@ -138,23 +179,31 @@ Input: ${inputText}
         <h2 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           English Definition
         </h2>
-        <button
-          onClick={() => setActiveTab("settings")}
-          className="p-1.5 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
-          title="Settings"
-        >
-          <SettingsIcon />
-        </button>
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab("history")}
+            className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+            title="History"
+          >
+            <HistoryIcon className="size-5" />
+          </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+            title="Settings"
+          >
+            <SettingsIcon className="size-5" />
+          </button>
+        </div>
       </div>
       <div className="mt-2">
-        <h3 className="text-sm font-medium text-gray-700">Original Text</h3>
         <div className="flex gap-1 items-center mt-1">
           <input
             type="text"
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="px-2 flex-1 h-9 bg-gray-50 rounded-lg border border-gray-200 w-full"
+            className="px-2 flex-1 h-9 bg-gray-50 rounded-lg border border-gray-200 w-full focus:outline-blue-600"
             placeholder="Enter text to translate"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -165,7 +214,7 @@ Input: ${inputText}
           />
           <button
             type="button"
-            className="px-2 h-9 flex-shrink-0 bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed active:bg-blue-700"
+            className="px-3 h-9 flex-shrink-0 bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed active:bg-blue-700"
             onClick={() => translate(text)}
             disabled={loading}
           >
